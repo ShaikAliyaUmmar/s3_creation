@@ -1,0 +1,18 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
+            }
+        }
+        stage('Deploy with Terraform') {
+            steps {
+                dir('Terraform') {  // Change directory to the terraform folder
+                    sh 'terraform init'
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+    }
+}
