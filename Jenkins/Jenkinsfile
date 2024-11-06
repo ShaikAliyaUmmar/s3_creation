@@ -3,14 +3,20 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Checkout the source code from GitHub repository
                 git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
             }
         }
         stage('Deploy with Terraform') {
             steps {
-                dir('terraform') {  // Change directory to the terraform folder
-                    sh 'terraform init'
-                    sh 'terraform apply -auto-approve'
+                // Use AWS credentials stored in Jenkins
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkinsdetails']]) {
+                    dir('terraform') {  // Change directory to the terraform folder
+                        // Initialize Terraform
+                        sh 'terraform init'
+                        // Apply the Terraform configuration to create the S3 bucket
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
