@@ -8,7 +8,7 @@ pipeline {
         }
         stage('Deploy with Terraform') {
             steps {
-                dir('Terraform') {  // Change directory to the terraform folder
+                dir('terraform') {  // Change directory to the terraform folder
                     sh 'terraform init'
                     sh 'terraform apply -auto-approve'
                 }
