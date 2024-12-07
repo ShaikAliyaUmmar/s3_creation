@@ -34,9 +34,16 @@ pipeline {
                 git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
             }
         }
+
+        stage('Create Application Zip') {
+            steps {
+                sh 'zip -r application.zip ./path-to-your-app/*'  // Update with your app's path
+            }
+        }
+
         stage('Verify File Exists') {
             steps {
-                sh 'ls -la'  // This will list all files in the workspace to check if application.zip exists
+                sh 'ls -la'  // To verify the application.zip file is created
             }
         }
 
