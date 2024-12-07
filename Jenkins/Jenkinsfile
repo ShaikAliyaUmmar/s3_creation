@@ -4,7 +4,7 @@ pipeline {
     environment {
         S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup'
         S3_KEY = 'my-app.zip'
-        ENVIRONMENT_NAME = 'Test-env-env-en'
+        ENVIRONMENT_NAME = 'Bean-pro-env'
         APPLICATION_NAME = 'test-env'
         AWS_REGION = 'us-east-1'
         SECRET_NAME = 'secret-jenkins-access'  // Replace with your actual secret name
@@ -31,7 +31,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/ManojKamatam/Beanstalk_Deployments_maintainingVersions-SecretManager.git', branch: 'main'
+                git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
             }
         }
         
