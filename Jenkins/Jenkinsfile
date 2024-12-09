@@ -1,61 +1,66 @@
 pipeline {
     agent any
-
     environment {
-        S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup1'
-        S3_KEY = 'my-app.zip'
-        ENVIRONMENT_NAME = 'Bean-pro-env'
-        APPLICATION_NAME = 'bean-pro'
         AWS_REGION = 'us-east-1'
-        VERSION_LABEL = "app-version-${BUILD_NUMBER}"
+        APP_NAME = 'bean-pro'
+        ENV_NAME = 'Bean-pro-env'
+        S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup1'
+        ZIP_FILE = 'application.zip'
+        S3_KEY = 'my-app.zip'
     }
-
     stages {
         stage('Verify Application Zip') {
             steps {
                 script {
-                    def appZipPath = '.\\application.zip' // Adjusted for Windows path
-                    if (!fileExists(appZipPath)) {
-                        error "The application.zip file does not exist at ${appZipPath}. Please check the file path."
+                    if (fileExists("${ZIP_FILE}")) {
+                        echo "${ZIP_FILE} exists and is ready for upload."
+                    } else {
+                        error "${ZIP_FILE} is missing!"
                     }
-                    echo "The application.zip file exists and is ready for upload."
                 }
             }
         }
-
         stage('Upload to S3') {
             steps {
-                bat """
-                    aws s3 cp .\\application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}
-                """
+                script {
+                    def uploadCommand = "aws s3 cp ./${ZIP_FILE} s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
+                    echo "Executing: ${uploadCommand}"
+                    bat script: uploadCommand
+                }
             }
         }
-
         stage('Create Application Version') {
             steps {
-                bat """
-                    aws elasticbeanstalk create-application-version ^
-                    --application-name ${APPLICATION_NAME} ^
-                    --version-label ${VERSION_LABEL} ^
-                    --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} ^
-                    --region ${AWS_REGION}
-                """
+                script {
+                    def versionLabel = "v-${BUILD_NUMBER}" // Use Jenkins build number for versioning
+                    def createVersionCommand = """
+                        aws elasticbeanstalk create-application-version \
+                        --application-name ${APP_NAME} \
+                        --version-label ${versionLabel} \
+                        --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
+                        --region ${AWS_REGION}
+                    """
+                    echo "Executing: ${createVersionCommand}"
+                    bat script: createVersionCommand
+                }
             }
         }
-
         stage('Update Elastic Beanstalk Environment') {
             steps {
-                bat """
-                    aws elasticbeanstalk update-environment ^
-                      --application-name ${APPLICATION_NAME} ^
-                      --environment-name ${ENVIRONMENT_NAME} ^
-                      --version-label ${VERSION_LABEL} ^
-                      --region ${AWS_REGION}
-                """
+                script {
+                    def versionLabel = "v-${BUILD_NUMBER}"
+                    def updateEnvCommand = """
+                        aws elasticbeanstalk update-environment \
+                        --environment-name ${ENV_NAME} \
+                        --version-label ${versionLabel} \
+                        --region ${AWS_REGION}
+                    """
+                    echo "Executing: ${updateEnvCommand}"
+                    bat script: updateEnvCommand
+                }
             }
         }
     }
-
     post {
         success {
             echo 'Deployment process completed successfully.'
