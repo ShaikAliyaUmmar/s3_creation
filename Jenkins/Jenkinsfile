@@ -11,38 +11,21 @@ pipeline {
     }
  
     stages {
-        stage('Retrieve AWS Credentials') {
+        stage('Verify Application Zip') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
-                    echo "AWS credentials loaded successfully."
+                script {
+                    def appZipPath = './application.zip'  // Update this to the correct path of your zip file
+                    if (!fileExists(appZipPath)) {
+                        error "The application.zip file does not exist at ${appZipPath}. Please check the file path."
+                    }
+                    echo "The application.zip file exists and is ready for upload."
                 }
-            }
-        }
- 
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
-            }
-        }
- 
-        stage('Create Application Zip') {
-            steps {
-                sh 'zip -r application.zip ./path-to-your-app/*'  // Update with your app's path
-            }
-        }
- 
-        stage('Verify File Exists') {
-            steps {
-                sh 'ls -la'  // To verify the application.zip file is created
             }
         }
  
         stage('Upload to S3') {
             steps {
-                sh "aws s3 cp application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
+                sh "aws s3 cp ./application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
             }
         }
  
