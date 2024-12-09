@@ -1,5 +1,6 @@
 pipeline {
     agent any
+ 
     environment {
         S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup1'
         S3_KEY = 'my-app.zip'
@@ -8,38 +9,40 @@ pipeline {
         AWS_REGION = 'us-east-1'
         VERSION_LABEL = "app-version-${BUILD_NUMBER}"
     }
+ 
     stages {
         stage('Retrieve AWS Credentials') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'aws-credentials', 
-                                                     usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                                                     passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        echo "AWS credentials loaded successfully."
-                    }
+                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+                    echo "AWS credentials loaded successfully."
                 }
             }
         }
+ 
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
             }
         }
+ 
         stage('Create Application Zip') {
             steps {
                 sh 'zip -r application.zip ./path-to-your-app/*'  // Update with your app's path
             }
         }
+ 
         stage('Verify File Exists') {
             steps {
                 sh 'ls -la'  // To verify the application.zip file is created
             }
         }
+ 
         stage('Upload to S3') {
             steps {
                 sh "aws s3 cp application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
             }
         }
+ 
         stage('Create Application Version') {
             steps {
                 sh """
@@ -51,6 +54,7 @@ pipeline {
                 """
             }
         }
+ 
         stage('Update Elastic Beanstalk Environment') {
             steps {
                 sh """
@@ -63,6 +67,7 @@ pipeline {
             }
         }
     }
+ 
     post {
         success {
             echo 'Deployment process completed successfully.'
