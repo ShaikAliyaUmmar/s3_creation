@@ -1,58 +1,45 @@
 pipeline {
     agent any
-
     environment {
         S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup1'
         S3_KEY = 'my-app.zip'
         ENVIRONMENT_NAME = 'Bean-pro-env'
         APPLICATION_NAME = 'bean-pro'
         AWS_REGION = 'us-east-1'
-        SECRET_NAME = 'secret-jenkins-access'  // Replace with your actual secret name
         VERSION_LABEL = "app-version-${BUILD_NUMBER}"
     }
-
     stages {
-        stage('Retrieve AWS Credentials from Secrets Manager') {
+        stage('Retrieve AWS Credentials') {
             steps {
                 script {
-                    // Retrieve the secret as plain text (JSON object)
-                    def secretValue = sh(script: "aws secretsmanager get-secret-value --secret-id ${SECRET_NAME} --query 'SecretString' --output text --region ${AWS_REGION}", returnStdout: true).trim()
-                    
-                    // Parse the JSON to get the key-value pair
-                    def jsonSlurper = new groovy.json.JsonSlurper()
-                    def credentials = jsonSlurper.parseText(secretValue)
-
-                    // Extract the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-                    env.AWS_ACCESS_KEY_ID = credentials.keySet().iterator().next()  // The key (AWS_ACCESS_KEY_ID)
-                    env.AWS_SECRET_ACCESS_KEY = credentials[env.AWS_ACCESS_KEY_ID]  // The value (AWS_SECRET_ACCESS_KEY)
+                    withCredentials([usernamePassword(credentialsId: 'aws-credentials', 
+                                                     usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                                                     passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        echo "AWS credentials loaded successfully."
+                    }
                 }
             }
         }
-
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/ShaikAliyaUmmar/s3_creation.git', branch: 'main'
             }
         }
-
         stage('Create Application Zip') {
             steps {
                 sh 'zip -r application.zip ./path-to-your-app/*'  // Update with your app's path
             }
         }
-
         stage('Verify File Exists') {
             steps {
                 sh 'ls -la'  // To verify the application.zip file is created
             }
         }
-
         stage('Upload to S3') {
             steps {
                 sh "aws s3 cp application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
             }
         }
-
         stage('Create Application Version') {
             steps {
                 sh """
@@ -64,7 +51,6 @@ pipeline {
                 """
             }
         }
-
         stage('Update Elastic Beanstalk Environment') {
             steps {
                 sh """
@@ -77,7 +63,6 @@ pipeline {
             }
         }
     }
-
     post {
         success {
             echo 'Deployment process completed successfully.'
