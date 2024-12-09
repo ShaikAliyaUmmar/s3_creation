@@ -22,41 +22,47 @@ pipeline {
         }
         stage('Upload to S3') {
             steps {
-                script {
-                    def uploadCommand = "aws s3 cp ./${ZIP_FILE} s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
-                    echo "Executing: ${uploadCommand}"
-                    bat script: uploadCommand
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    script {
+                        def uploadCommand = "aws s3 cp ./${ZIP_FILE} s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
+                        echo "Executing: ${uploadCommand}"
+                        bat script: uploadCommand
+                    }
                 }
             }
         }
         stage('Create Application Version') {
             steps {
-                script {
-                    def versionLabel = "v-${BUILD_NUMBER}" // Use Jenkins build number for versioning
-                    def createVersionCommand = """
-                        aws elasticbeanstalk create-application-version \
-                        --application-name ${APP_NAME} \
-                        --version-label ${versionLabel} \
-                        --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
-                        --region ${AWS_REGION}
-                    """
-                    echo "Executing: ${createVersionCommand}"
-                    bat script: createVersionCommand
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    script {
+                        def versionLabel = "v-${BUILD_NUMBER}" // Use Jenkins build number for versioning
+                        def createVersionCommand = """
+                            aws elasticbeanstalk create-application-version \
+                            --application-name ${APP_NAME} \
+                            --version-label ${versionLabel} \
+                            --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
+                            --region ${AWS_REGION}
+                        """
+                        echo "Executing: ${createVersionCommand}"
+                        bat script: createVersionCommand
+                    }
                 }
             }
         }
         stage('Update Elastic Beanstalk Environment') {
             steps {
-                script {
-                    def versionLabel = "v-${BUILD_NUMBER}"
-                    def updateEnvCommand = """
-                        aws elasticbeanstalk update-environment \
-                        --environment-name ${ENV_NAME} \
-                        --version-label ${versionLabel} \
-                        --region ${AWS_REGION}
-                    """
-                    echo "Executing: ${updateEnvCommand}"
-                    bat script: updateEnvCommand
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    script {
+                        def versionLabel = "v-${BUILD_NUMBER}"
+                        def updateEnvCommand = """
+                            aws elasticbeanstalk update-environment \
+                            --environment-name ${ENV_NAME} \
+                            --version-label ${versionLabel} \
+                            --region ${AWS_REGION}
+                        """
+                        echo "Executing: ${updateEnvCommand}"
+                        bat script: updateEnvCommand
+                    }
                 }
             }
         }
