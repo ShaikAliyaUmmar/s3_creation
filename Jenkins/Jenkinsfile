@@ -13,7 +13,10 @@ pipeline {
     stages {
         stage('Retrieve AWS Credentials') {
             steps {
-                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
                     echo "AWS credentials loaded successfully."
                 }
             }
