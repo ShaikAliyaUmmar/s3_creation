@@ -25,34 +25,34 @@ pipeline {
  
         stage('Upload to S3') {
             steps {
-                sh "aws s3 cp ./application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
-            }
+                bat "aws s3 cp .\\application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
+                  }
         }
- 
+
         stage('Create Application Version') {
             steps {
-                sh """
-                    aws elasticbeanstalk create-application-version \
-                    --application-name ${APPLICATION_NAME} \
-                    --version-label ${VERSION_LABEL} \
-                    --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
+                bat """
+                    aws elasticbeanstalk create-application-version ^
+                    --application-name ${APPLICATION_NAME} ^
+                    --version-label ${VERSION_LABEL} ^
+                    --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} ^
                     --region ${AWS_REGION}
-                """
-            }
+                    """
+                   }
         }
- 
+
         stage('Update Elastic Beanstalk Environment') {
             steps {
-                sh """
-                    aws elasticbeanstalk update-environment \
-                      --application-name ${APPLICATION_NAME} \
-                      --environment-name ${ENVIRONMENT_NAME} \
-                      --version-label ${VERSION_LABEL} \
-                      --region ${AWS_REGION}
-                """
+                bat """
+                    aws elasticbeanstalk update-environment ^
+                    --application-name ${APPLICATION_NAME} ^
+                    --environment-name ${ENVIRONMENT_NAME} ^
+                    --version-label ${VERSION_LABEL} ^
+                    --region ${AWS_REGION}
+                    """
+                   }
             }
-        }
-    }
+
  
     post {
         success {
